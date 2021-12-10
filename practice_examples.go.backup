@@ -1,0 +1,33 @@
+package main
+
+import "fmt"
+
+func main() {
+
+	// Variable use
+	var greeting string = "HELLO WORLD"
+	var number int
+	var isSuccess bool
+
+	// Datatypes conversion
+	var value1 int8 = 123
+	var value2 int32 = int32(value1)
+	var value3 int64 = int64(value2)
+
+	// Type declaration
+	type Chat string
+	var message Chat = "Hey this is type declaration example"
+
+	number = 243654
+	isSuccess = true
+
+	// Constant must already has value
+	const name string = "Blessy"
+
+	fmt.Println(greeting)
+	fmt.Println(number)
+	fmt.Println(value3)
+	fmt.Println(isSuccess)
+	fmt.Println("My Name is", name)
+	fmt.Println(message)
+}
