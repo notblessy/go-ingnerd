@@ -9,8 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
-//dbConnection connects go to mysql database
-func DbConnection() *gorm.DB {
+//ConnectDB connects go to mysql database
+func ConnectDB() *gorm.DB {
 	errorENV := godotenv.Load()
 	if errorENV != nil {
 		panic("Failed to load env file")
@@ -30,8 +30,8 @@ func DbConnection() *gorm.DB {
 	return db
 }
 
-//KillDbConnection is stopping your connection to mysql database
-func KillDbConnection(db *gorm.DB) {
+//DisconnectDB is stopping your connection to mysql database
+func DisconnectDB(db *gorm.DB) {
 	dbSQL, err := db.DB()
 	if err != nil {
 		panic("Failed to kill connection from database")

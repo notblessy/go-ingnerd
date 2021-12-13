@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var db *gorm.DB = config.DbConnection()
+var db *gorm.DB = config.ConnectDB()
 
 type todoRequest struct {
 	Name        string `json:"name"`

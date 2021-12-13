@@ -7,11 +7,11 @@ import (
 )
 
 var (
-	db *gorm.DB = config.DbConnection()
+	db *gorm.DB = config.ConnectDB()
 )
 
 func main() {
-	defer config.KillDbConnection(db)
+	defer config.DisconnectDB(db)
 
 	routes.Routes()
 }
