@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/notblessy/go-ingnerd/src/config"
 	"github.com/notblessy/go-ingnerd/src/models"
+	"github.com/spf13/cast"
 	"gorm.io/gorm"
 )
 
@@ -21,11 +23,11 @@ type todoResponse struct {
 	ID uint `json:"id"`
 }
 
-func CreateTodo(c *gin.Context) {
+func CreateTodo(context *gin.Context) {
 	var data todoRequest
 
-	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := context.ShouldBindJSON(&data); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -35,7 +37,7 @@ func CreateTodo(c *gin.Context) {
 
 	result := db.Create(&todo)
 	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Something went wrong"})
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Something went wrong"})
 		return
 	}
 
@@ -44,15 +46,15 @@ func CreateTodo(c *gin.Context) {
 	response.Name = todo.Name
 	response.Description = todo.Description
 
-	c.JSON(http.StatusCreated, response)
+	context.JSON(http.StatusCreated, response)
 }
 
-func GetAllTodos(c *gin.Context) {
+func GetAllTodos(context *gin.Context) {
 	var todos []models.Todo
 
 	err := db.Find(&todos)
 	if err.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Error getting data"})
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Error getting data"})
 		return
 	}
 
@@ -65,10 +67,61 @@ func GetAllTodos(c *gin.Context) {
 	// 	})
 	// }
 
-	c.JSON(http.StatusOK, gin.H{
+	context.JSON(http.StatusOK, gin.H{
 		"status":  "200",
 		"message": "Success",
 		"data":    todos,
+	})
+
+}
+
+func UpdateTodo(context *gin.Context) {
+	var data todoRequest
+	reqParamId := context.Param("idTodo")
+	idTodo := cast.ToUint(reqParamId)
+
+	if err := context.BindJSON(&data); err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	todo := models.Todo{}
+
+	todoById := db.Where("id = ?", idTodo).First(&todo)
+	if todoById.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Todo not found"})
+		return
+	}
+
+	todo.Name = data.Name
+	todo.Description = data.Description
+
+	result := db.Save(&todo)
+	if result.Error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Something went wrong"})
+		return
+	}
+
+	var response todoResponse
+	response.ID = todo.ID
+	response.Name = todo.Name
+	response.Description = todo.Description
+
+	context.JSON(http.StatusCreated, response)
+}
+
+func DeleteTodo(context *gin.Context) {
+	todo := models.Todo{}
+	reqParamId := context.Param("idTodo")
+	idTodo := cast.ToUint(reqParamId)
+
+	delete := db.Where("id = ?", idTodo).Unscoped().Delete(&todo)
+	fmt.Println(delete)
+
+	context.JSON(http.StatusOK, gin.H{
+		"status":  "200",
+		"message": "Success",
+		"data":    idTodo,
 	})
 
 }
