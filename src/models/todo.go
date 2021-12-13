@@ -1,7 +1,11 @@
 package models
 
+import (
+	"gorm.io/gorm"
+)
+
 type Todo struct {
-	Id        int
-	Item      string
-	Completed int
+	gorm.Model
+	Name        string
+	Description string
 }

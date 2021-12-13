@@ -1,90 +1,74 @@
 package controllers
 
 import (
-	"fmt"
-	"html/template"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	"github.com/notblessy/go-ingnerd/src/config"
 	"github.com/notblessy/go-ingnerd/src/models"
+	"gorm.io/gorm"
 )
 
-var (
-	id        int
-	item      string
-	completed int
-	view      = template.Must(template.ParseFiles("./views/index.html"))
-	database  = config.Database()
-)
+var db *gorm.DB = config.DbConnection()
 
-func Show(w http.ResponseWriter, r *http.Request) {
-	statement, err := database.Query(`SELECT * FROM todos`)
+type todoRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
 
-	if err != nil {
-		fmt.Println(err)
+type todoResponse struct {
+	todoRequest
+	ID uint `json:"id"`
+}
+
+func CreateTodo(c *gin.Context) {
+	var data todoRequest
+
+	if err := c.ShouldBindJSON(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
+	todo := models.Todo{}
+	todo.Name = data.Name
+	todo.Description = data.Description
+
+	result := db.Create(&todo)
+	if result.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Something went wrong"})
+		return
+	}
+
+	var response todoResponse
+	response.ID = todo.ID
+	response.Name = todo.Name
+	response.Description = todo.Description
+
+	c.JSON(http.StatusCreated, response)
+}
+
+func GetAllTodos(c *gin.Context) {
 	var todos []models.Todo
 
-	for statement.Next() {
-		err = statement.Scan(&id, &item, &completed)
-
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		todo := models.Todo{
-			Id:        id,
-			Item:      item,
-			Completed: completed,
-		}
-
-		todos = append(todos, todo)
+	err := db.Find(&todos)
+	if err.Error != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error getting data"})
+		return
 	}
 
-	data := models.View{
-		Todos: todos,
-	}
+	// var response []todoResponse
+	// for _, todo := range todos {
+	// 	response = append(response, todoResponse{
+	// 		ID:          todo.ID,
+	// 		name:        todo.Name,
+	// 		description: todo.Description,
+	// 	})
+	// }
 
-	_ = view.Execute(w, data)
-}
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "200",
+		"message": "Success",
+		"data":    todos,
+	})
 
-func Add(w http.ResponseWriter, r *http.Request) {
-
-	item := r.FormValue("item")
-
-	_, err := database.Exec(`INSERT INTO todos (item) VALUE (?)`, item)
-
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	http.Redirect(w, r, "/", 301)
-}
-
-func Delete(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	_, err := database.Exec(`DELETE FROM todos WHERE id = ?`, id)
-
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	http.Redirect(w, r, "/", 301)
-}
-
-func Complete(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	_, err := database.Exec(`UPDATE todos SET completed = 1 WHERE id = ?`, id)
-
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	http.Redirect(w, r, "/", 301)
 }
